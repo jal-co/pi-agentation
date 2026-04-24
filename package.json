@@ -1,5 +1,5 @@
 {
-	"name": "@denniseijpe/pi-agentation",
+	"name": "pi-agentation",
 	"version": "0.1.0",
 	"description": "Pi extension that receives Agentation webhooks and turns them into queued user messages",
 	"author": "Dennis Eijpe",

@@ -18,7 +18,7 @@ Please note: this is a very early version. Pi did most of the coding.
 ### From npm
 
 ```bash
-pi install npm:@denniseijpe/pi-agentation
+pi install npm:pi-agentation
 ```
 
 ### From git
