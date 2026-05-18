@@ -1,6 +1,6 @@
 {
 	"name": "pi-agentation",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Pi extension that receives Agentation webhooks and turns them into queued user messages",
 	"author": "Dennis Eijpe",
 	"license": "MIT",
@@ -23,7 +23,7 @@
 		]
 	},
 	"peerDependencies": {
-		"@mariozechner/pi-coding-agent": "*"
+		"@earendil-works/pi-coding-agent": "*"
 	},
 	"scripts": {
 		"pack:dry-run": "npm pack --dry-run"

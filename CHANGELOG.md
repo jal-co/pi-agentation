@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Updated Pi type imports and peer dependency for the `@earendil-works/pi-coding-agent` package scope introduced by Pi's package rename.
+
 ## 0.1.0
 
 - Initial release.
