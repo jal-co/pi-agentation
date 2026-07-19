@@ -16,16 +16,17 @@ Start the listener, then run:
 
     /agentation-bookmarklet
 
-Save the printed `javascript:` snippet as a browser bookmark. Click it on any
-running dev app to mount the Agentation toolbar, pre-wired to the webhook
-(token included). Nothing touches the project repo.
+Then open the printed `/agentation/bookmarklet` URL and drag the button onto
+your bookmarks bar. Click it on any running dev app to mount the Agentation
+toolbar, pre-wired to the webhook (token included). Nothing touches the
+project repo.
 
 Endpoints added to the local server:
 
 | Endpoint | Description |
 |---|---|
 | `GET /agentation/inject.js` | Self-contained IIFE bundle (Agentation + React) that mounts the toolbar |
-| `GET /agentation/bookmarklet` | The bookmarklet as plain text |
+| `GET /agentation/bookmarklet` | Drag-to-install page for the bookmarklet (`?format=text` for the raw string) |
 
 Both respect `PI_AGENTATION_TOKEN`. The bundle is built on first request with
 esbuild and cached for the session. Pages with a strict `script-src` CSP may
