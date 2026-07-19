@@ -6,6 +6,7 @@ import {
   type ServerResponse,
 } from "node:http";
 import type { AddressInfo } from "node:net";
+import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 type JsonObject = Record<string, unknown>;
@@ -275,6 +276,34 @@ const sendJson = (
   res.end(JSON.stringify(body));
 };
 
+let injectBundleCache: string | undefined;
+
+const buildInjectBundle = async (): Promise<string> => {
+  if (injectBundleCache) {
+    return injectBundleCache;
+  }
+
+  const { build } = await import("esbuild");
+  const entry = fileURLToPath(new URL("./inject-entry.ts", import.meta.url));
+  const result = await build({
+    bundle: true,
+    define: { "process.env.NODE_ENV": '"development"' },
+    entryPoints: [entry],
+    format: "iife",
+    minify: true,
+    platform: "browser",
+    write: false,
+  });
+
+  const output = result.outputFiles[0]?.text;
+  if (!output) {
+    throw new Error("esbuild produced no output for inject bundle.");
+  }
+
+  injectBundleCache = output;
+  return output;
+};
+
 const maskToken = (token: string | undefined): string => {
   if (!token) {
     return "disabled";
@@ -335,6 +364,24 @@ export default function (pi: ExtensionAPI) {
     ctx.ui.setStatus(STATUS_KEY, "agentation: stopped");
   };
 
+  const tokenQuery = (): string => {
+    return config.token ? `?token=${encodeURIComponent(config.token)}` : "";
+  };
+
+  const injectUrl = (): string => {
+    return `${webhookUrl}/inject.js${tokenQuery()}`;
+  };
+
+  const buildBookmarklet = (): string => {
+    const src = injectUrl();
+    const sep = src.includes("?") ? "&" : "?";
+    return (
+      "javascript:(function(){var s=document.createElement('script');" +
+      `s.src=${JSON.stringify(src)}+'${sep}t='+Date.now();` +
+      "document.body.appendChild(s);})()"
+    );
+  };
+
   const sendToPi = (message: string): "immediate" | "queued" => {
     if (!isAgentBusy) {
       try {
@@ -356,7 +403,15 @@ export default function (pi: ExtensionAPI) {
     const method = req.method ?? "GET";
     const requestUrl = new URL(req.url ?? "/", webhookUrl);
 
-    if (requestUrl.pathname !== config.path) {
+    const isInjectRequest = requestUrl.pathname === `${config.path}/inject.js`;
+    const isBookmarkletRequest =
+      requestUrl.pathname === `${config.path}/bookmarklet`;
+
+    if (
+      requestUrl.pathname !== config.path &&
+      !isInjectRequest &&
+      !isBookmarkletRequest
+    ) {
       sendJson(res, 404, { error: "Not found." });
       return;
     }
@@ -378,6 +433,41 @@ export default function (pi: ExtensionAPI) {
         "Access-Control-Allow-Origin": "*",
       });
       res.end();
+      return;
+    }
+
+    if (isInjectRequest || isBookmarkletRequest) {
+      if (method !== "GET") {
+        sendJson(res, 405, { error: "Method not allowed." });
+        return;
+      }
+
+      if (isBookmarkletRequest) {
+        res.writeHead(200, {
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-store",
+          "Content-Type": "text/plain; charset=utf-8",
+        });
+        res.end(buildBookmarklet());
+        return;
+      }
+
+      try {
+        const bundle = await buildInjectBundle();
+        const bootstrap = `window.__PI_AGENTATION__={webhookUrl:${JSON.stringify(
+          `${webhookUrl}${tokenQuery()}`,
+        )}};\n`;
+        res.writeHead(200, {
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "no-store",
+          "Content-Type": "application/javascript; charset=utf-8",
+        });
+        res.end(bootstrap + bundle);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unknown bundle error.";
+        sendJson(res, 500, { error: message, ok: false });
+      }
       return;
     }
 
@@ -503,7 +593,10 @@ export default function (pi: ExtensionAPI) {
       updateStatus(ctx);
 
       if (ctx.hasUI) {
-        ctx.ui.notify(`pi-agentation listening on ${webhookUrl}`, "info");
+        ctx.ui.notify(
+          `pi-agentation listening on ${webhookUrl} | inject: ${injectUrl()} | run /agentation-bookmarklet for one-click injection`,
+          "info",
+        );
       }
     } catch (error) {
       lastError = error instanceof Error ? error.message : String(error);
@@ -575,6 +668,29 @@ export default function (pi: ExtensionAPI) {
     description: "Stop the pi-agentation webhook listener",
     handler: async (_args, ctx) => {
       await stopServer(ctx);
+    },
+  });
+
+  pi.registerCommand("agentation-bookmarklet", {
+    description:
+      "Show the bookmarklet that injects the Agentation toolbar into any localhost page",
+    handler: async (_args, ctx) => {
+      if (!isListening) {
+        if (ctx.hasUI) {
+          ctx.ui.notify(
+            "pi-agentation is not running. Start it with /agentation-start first.",
+            "warning",
+          );
+        }
+        return;
+      }
+
+      if (ctx.hasUI) {
+        ctx.ui.notify(
+          `Bookmarklet (also served at ${webhookUrl}/bookmarklet${tokenQuery()}):\n${buildBookmarklet()}`,
+          "info",
+        );
+      }
     },
   });
 

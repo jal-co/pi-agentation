@@ -5,7 +5,7 @@
 	"author": "Dennis Eijpe",
 	"license": "MIT",
 	"type": "module",
-	"repository": "github:denniseijpe/pi-agentation",
+	"repository": "github:jal-co/pi-agentation",
 	"bugs": "https://github.com/denniseijpe/pi-agentation/issues",
 	"homepage": "https://github.com/denniseijpe/pi-agentation#readme",
 	"keywords": [
@@ -15,7 +15,8 @@
 		"agentation"
 	],
 	"files": [
-		"index.ts"
+		"index.ts",
+		"inject-entry.ts"
 	],
 	"pi": {
 		"extensions": [
@@ -24,6 +25,12 @@
 	},
 	"peerDependencies": {
 		"@earendil-works/pi-coding-agent": "*"
+	},
+	"dependencies": {
+		"agentation": "^3.0.2",
+		"esbuild": "^0.25.0",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0"
 	},
 	"scripts": {
 		"pack:dry-run": "npm pack --dry-run"

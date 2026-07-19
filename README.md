@@ -5,6 +5,32 @@ real Pi user messages.
 
 Please note: this is a very early version. Pi did most of the coding.
 
+This fork adds zero-footprint injection: the extension bundles the
+[Agentation](https://www.npmjs.com/package/agentation) toolbar at runtime and
+serves it from the local webhook server, so host projects never install or
+commit anything. Inject it into any localhost page with a bookmarklet.
+
+## Zero-footprint injection (fork addition)
+
+Start the listener, then run:
+
+    /agentation-bookmarklet
+
+Save the printed `javascript:` snippet as a browser bookmark. Click it on any
+running dev app to mount the Agentation toolbar, pre-wired to the webhook
+(token included). Nothing touches the project repo.
+
+Endpoints added to the local server:
+
+| Endpoint | Description |
+|---|---|
+| `GET /agentation/inject.js` | Self-contained IIFE bundle (Agentation + React) that mounts the toolbar |
+| `GET /agentation/bookmarklet` | The bookmarklet as plain text |
+
+Both respect `PI_AGENTATION_TOKEN`. The bundle is built on first request with
+esbuild and cached for the session. Pages with a strict `script-src` CSP may
+block bookmarklet injection; local dev servers typically do not.
+
 ## What it does
 
 - starts a small local webhook server inside Pi
