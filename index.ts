@@ -382,6 +382,105 @@ export default function (pi: ExtensionAPI) {
     );
   };
 
+  const escapeHtml = (value: string): string => {
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  };
+
+  const buildBookmarkletPage = (): string => {
+    const bookmarklet = buildBookmarklet();
+    const href = escapeHtml(bookmarklet);
+    return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pi-agentation bookmarklet</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: oklch(0.18 0.01 260);
+    color: oklch(0.93 0.01 260);
+    font: 16px/1.6 ui-sans-serif, system-ui, sans-serif;
+  }
+  main {
+    max-width: 34rem;
+    padding: 2.5rem;
+    text-align: center;
+  }
+  h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.5rem;
+  }
+  p { margin: 0 0 1.75rem; color: oklch(0.72 0.01 260); text-wrap: balance; }
+  .bm {
+    display: inline-block;
+    padding: 0.875rem 1.75rem;
+    border-radius: 0.625rem;
+    background: oklch(0.55 0.18 265);
+    color: oklch(0.98 0.005 260);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: grab;
+    border: 1px solid oklch(0.65 0.16 265);
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.3);
+    transition: background 150ms ease, box-shadow 150ms ease;
+  }
+  .bm:hover {
+    background: oklch(0.6 0.18 265);
+    box-shadow: 0 2px 8px oklch(0 0 0 / 0.4);
+  }
+  .bm:active { cursor: grabbing; }
+  .hint {
+    margin-top: 1.75rem;
+    font-size: 0.875rem;
+    color: oklch(0.6 0.01 260);
+  }
+  details {
+    margin-top: 2rem;
+    text-align: left;
+    font-size: 0.8125rem;
+  }
+  summary { cursor: pointer; color: oklch(0.6 0.01 260); }
+  code {
+    display: block;
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: oklch(0.14 0.01 260);
+    border: 1px solid oklch(0.28 0.01 260);
+    word-break: break-all;
+    font: 0.75rem/1.5 ui-monospace, monospace;
+    color: oklch(0.8 0.01 260);
+    user-select: all;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Agentation for pi</h1>
+  <p>Drag the button below onto your bookmarks bar. Then click it on any running dev app to mount the Agentation toolbar, wired to this pi session.</p>
+  <a class="bm" href="${href}" onclick="return false" title="Drag me to your bookmarks bar">&#128204; Agentation &rarr; pi</a>
+  <div class="hint">Bookmarks bar hidden? Press &#8984;&#8679;B (Chrome/Brave) to show it.</div>
+  <details>
+    <summary>Or copy the bookmarklet manually</summary>
+    <code>${escapeHtml(bookmarklet)}</code>
+  </details>
+</main>
+</body>
+</html>\n`;
+  };
+
   const sendToPi = (message: string): "immediate" | "queued" => {
     if (!isAgentBusy) {
       try {
@@ -443,12 +542,15 @@ export default function (pi: ExtensionAPI) {
       }
 
       if (isBookmarkletRequest) {
+        const wantsText = requestUrl.searchParams.get("format") === "text";
         res.writeHead(200, {
           "Access-Control-Allow-Origin": "*",
           "Cache-Control": "no-store",
-          "Content-Type": "text/plain; charset=utf-8",
+          "Content-Type": wantsText
+            ? "text/plain; charset=utf-8"
+            : "text/html; charset=utf-8",
         });
-        res.end(buildBookmarklet());
+        res.end(wantsText ? buildBookmarklet() : buildBookmarkletPage());
         return;
       }
 
@@ -687,7 +789,7 @@ export default function (pi: ExtensionAPI) {
 
       if (ctx.hasUI) {
         ctx.ui.notify(
-          `Bookmarklet (also served at ${webhookUrl}/bookmarklet${tokenQuery()}):\n${buildBookmarklet()}`,
+          `Open ${webhookUrl}/bookmarklet${tokenQuery()} in your browser and drag the button to your bookmarks bar.\nRaw bookmarklet:\n${buildBookmarklet()}`,
           "info",
         );
       }
