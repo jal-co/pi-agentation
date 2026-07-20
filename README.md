@@ -42,16 +42,16 @@ block bookmarklet injection; local dev servers typically do not.
 
 ## Install
 
-### From npm
+### This fork (from git)
+
+```bash
+pi install git:github.com/jal-co/pi-agentation
+```
+
+### Upstream (from npm, no injection support)
 
 ```bash
 pi install npm:pi-agentation
-```
-
-### From git
-
-```bash
-pi install git:github.com/denniseijpe/pi-agentation
 ```
 
 ## Usage
@@ -72,6 +72,12 @@ Stop it when you are done:
 
 ```bash
 /agentation-stop
+```
+
+Get the drag-to-install bookmarklet page:
+
+```bash
+/agentation-bookmarklet
 ```
 
 ## Configuration in your app
@@ -101,9 +107,13 @@ PI_AGENTATION_TOKEN = "your-secret-token"
 
 This allows you to have seperate ports for different projects.
 
-## Agentation setup
+## Agentation setup (manual alternative)
 
-Install the [agentation package from npm](https://www.npmjs.com/package/agentation).
+With this fork you normally skip this section entirely: use the bookmarklet
+from `/agentation-bookmarklet` and keep your project untouched.
+
+If you prefer installing the toolbar into the app instead, install the
+[agentation package from npm](https://www.npmjs.com/package/agentation).
 
 Point Agentation at:
 
@@ -194,6 +204,7 @@ export function App() {
 | `/agentation-start [port]` | Start the webhook listener (optional port) |
 | `/agentation-stop` | Stop the webhook listener |
 | `/agentation-status` | Show current listener status |
+| `/agentation-bookmarklet` | Print the bookmarklet and its drag-to-install page URL |
 
 ## Notes
 
@@ -202,3 +213,4 @@ export function App() {
 - `annotation.add` and other non-`submit` toolbar events are ignored on purpose.
 - This extension is focused on getting Agentation prompts into Pi, not on syncing replies back.
 - If you switch or fork sessions, the listener stops with the old session. Re-run `/agentation-start` in the new session.
+- The injected toolbar lives only in the page's memory: it is gone on refresh and never touches the host project, its dev server, or its builds.
